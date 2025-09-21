@@ -544,3 +544,13 @@ set(DATA_SOURCES
    src/data/playerdata.cpp
    src/data/teamdata.cpp
 )
+
+set(COMMENTARY_HEADERS
+   src/commentary/matchcommentary.hpp
+   src/commentary/commentarymanager.hpp
+)
+
+set(COMMENTARY_SOURCES
+   src/commentary/matchcommentary.cpp
+   src/commentary/commentarymanager.cpp
+)

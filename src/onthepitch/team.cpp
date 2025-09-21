@@ -5,6 +5,7 @@
 #include "team.hpp"
 
 #include "match.hpp"
+#include "../commentary/commentarymanager.hpp"
 
 #include "../gamedefines.hpp"
 #include "../utils.hpp"
@@ -239,6 +240,17 @@ void Team::SetFadingTeamPossessionAmount(float value) {
 }
 
 void Team::SetLastTouchPlayer(Player *player, e_TouchType touchType) {
+  // Check for pass and notify commentary system
+  if (lastTouchPlayer != nullptr && player != nullptr && 
+      lastTouchPlayer != player && 
+      touchType == e_TouchType_Intentional_Kicked) {
+    // Get commentary manager from match
+    CommentaryManager* commentaryManager = match->GetCommentaryManager();
+    if (commentaryManager) {
+      commentaryManager->OnPass(lastTouchPlayer, player);
+    }
+  }
+  
   lastTouchPlayers[touchType] = player;
   lastTouchPlayer = player;
   lastTouchType = touchType;

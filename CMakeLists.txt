@@ -98,6 +98,7 @@ add_library(gamelib ${GAME_SOURCES} ${GAME_HEADERS})
 add_library(hidlib ${HID_SOURCES} ${HID_HEADERS})
 add_library(menulib ${MENU_SOURCES} ${MENU_HEADERS})
 add_library(datalib ${DATA_SOURCES} ${DATA_HEADERS})
+add_library(commentarylib ${COMMENTARY_SOURCES} ${COMMENTARY_HEADERS})
 
 # Platform-specific libs
 if(APPLE)
@@ -106,7 +107,7 @@ else()
    set(PLATFORM_LIBS dl m)
 endif()
 
-set(LIBRARIES gamelib hidlib menulib datalib leaguelib blunted2
+set(LIBRARIES gamelib hidlib menulib datalib leaguelib commentarylib blunted2
    ${Boost_LIBRARIES} SQLite::SQLite3
    ${SDL2_IMAGE_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_GFX_LIBRARIES}
    ${SDL2_LIBRARIES} ${OPENAL_LIBRARY} ${PLATFORM_LIBS} ${OPENGL_LIBRARIES})

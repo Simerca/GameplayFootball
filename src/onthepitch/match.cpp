@@ -5,6 +5,9 @@
 #include "match.hpp"
 
 #include "../main.hpp"
+#include <cstdlib>
+#include <iostream>
+#include "../commentary/commentarymanager.hpp"
 
 #include "proceduralpitch.hpp"
 
@@ -80,6 +83,10 @@ Match::Match(MatchData *matchData, const std::vector<IHIDevice*> &controllers) :
   Log(e_Notice, "Match", "Match", "Loading player animations");
 
   anims = boost::shared_ptr<AnimCollection>(new AnimCollection(GetScene3D()));
+  
+  // Initialize commentary system
+  commentaryManager = new CommentaryManager();
+  commentaryManager->Initialize(this);
   anims->Load("media/animations");
 
 
@@ -409,6 +416,12 @@ void Match::Exit() {
   if (Verbose()) printf("\nscene3D tree before match Exit():\n");
   if (Verbose()) scene3D->PrintTree();
 
+  // Shutdown commentary system
+  if (commentaryManager) {
+    commentaryManager->Shutdown();
+    delete commentaryManager;
+    commentaryManager = nullptr;
+  }
 
   delete possessionSideHistory;
 
@@ -691,6 +704,17 @@ void Match::SetMatchPhase(e_MatchPhase newMatchPhase) {
   else if (matchPhase == e_MatchPhase_1stExtraTime) matchTime_ms = 5400000;
   else if (matchPhase == e_MatchPhase_2ndExtraTime) matchTime_ms = 6300000;
   else if (matchPhase == e_MatchPhase_Penalties)    matchTime_ms = 7200000;
+
+  // Trigger commentary for match phases
+  if (commentaryManager) {
+    if (matchPhase == e_MatchPhase_1stHalf) {
+      commentaryManager->OnMatchStart(matchData->GetTeamData(0)->GetName(), 
+                                      matchData->GetTeamData(1)->GetName());
+    } else if (matchPhase == e_MatchPhase_2ndHalf) {
+      commentaryManager->OnHalfTime(matchData->GetGoalCount(0), 
+                                    matchData->GetGoalCount(1));
+    }
+  }
 
   if (matchPhase == e_MatchPhase_2ndHalf) {
     teams[0]->RelaxFatigue(0.05f);
@@ -998,6 +1022,10 @@ void Match::Process() {
           lastGoalScorer = teams[GetLastGoalTeamID()]->GetLastTouchPlayer();
           if (lastGoalScorer) {
             SpamMessage("GOAL for " + matchData->GetTeamData(GetLastGoalTeamID())->GetName() + "! " + lastGoalScorer->GetPlayerData()->GetLastName() + " scores!", 4000);
+            // Trigger commentary for goal
+            if (commentaryManager) {
+              commentaryManager->OnGoal(lastGoalScorer, teams[GetLastGoalTeamID()]);
+            }
           } else {
             SpamMessage("GOAL!!!", 4000);
           }
@@ -1463,6 +1491,10 @@ bool Match::CheckForGoal(signed int side) {
   if (fabs(previousBallPos.coords[1]) > 3.7 && fabs(previousBallPos.coords[0]) > pitchHalfW - lineHalfW - 0.11) return false;
 
   if (intersect) return true; else return false;
+}
+
+void Match::SetBallRetainer(Player *retainer) {
+  ballRetainer = retainer;
 }
 
 void Match::CalculateBestPossessionTeamID() {

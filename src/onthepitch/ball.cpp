@@ -5,6 +5,7 @@
 #include "ball.hpp"
 
 #include <cmath>
+#include <iostream>
 
 #include "utils/objectloader.hpp"
 #include "scene/objectfactory.hpp"
@@ -89,6 +90,8 @@ Vector3 Ball::GetMovement() {
 }
 
 void Ball::Touch(const Vector3 &target) {
+  // Debug log
+  std::cout << "[BALL TOUCH] Ball touched with force: " << target.GetLength() << std::endl;
 
   if (positionBuffer.coords[2] < 0.11f) positionBuffer.coords[2] = 0.11f;
 

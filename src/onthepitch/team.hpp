@@ -56,6 +56,7 @@ class Team {
     void SetFadingTeamPossessionAmount(float value);
 
     void SetLastTouchPlayer(Player *player, e_TouchType touchType = e_TouchType_Intentional_Kicked);
+    class CommentaryManager* GetCommentaryManager();
     Player *GetLastTouchPlayer(e_TouchType touchType) const { return lastTouchPlayers[touchType]; }
     Player *GetLastTouchPlayer() const { return lastTouchPlayer; }
     unsigned long GetLastTouchTime_ms() { return lastTouchPlayer ? lastTouchPlayer->GetLastTouchTime_ms() : 0; }

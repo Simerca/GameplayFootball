@@ -27,6 +27,8 @@
 #include "scene/objects/sound.hpp"
 #include "scene/objects/light.hpp"
 
+#include "../commentary/matchcommentary.hpp"
+
 #include "types/messagequeue.hpp"
 #include "types/command.hpp"
 #include "types/lockable.hpp"
@@ -145,6 +147,9 @@ class Match {
 
     void SetGoalScored(bool onOff) { if (onOff == false) ballIsInGoal = false; goalScored = onOff; }
     bool IsGoalScored() const { return goalScored; }
+    
+    // Commentary system
+    class CommentaryManager* GetCommentaryManager() { return commentaryManager; }
     int GetLastGoalTeamID() const { return lastGoalTeamID; }
     void SetLastTouchTeamID(int id, e_TouchType touchType = e_TouchType_Intentional_Kicked) { lastTouchTeamIDs[touchType] = id; lastTouchTeamID = id; referee->BallTouched(); }
     int GetLastTouchTeamID(e_TouchType touchType) const { return lastTouchTeamIDs[touchType]; }
@@ -159,7 +164,7 @@ class Match {
     signed int GetBestPossessionTeamID();
     Player *GetDesignatedPossessionPlayer() { return designatedPossessionPlayer; }
     Player *GetBallRetainer() { return ballRetainer; }
-    void SetBallRetainer(Player *retainer) { ballRetainer = retainer; }
+    void SetBallRetainer(Player *retainer);
 
     float GetAveragePossessionSide(int time_ms) const { return possessionSideHistory->GetAverage(time_ms); }
 
@@ -299,6 +304,8 @@ class Match {
     Player *lastGoalScorer;
     int lastTouchTeamIDs[e_TouchType_SIZE];
     int lastTouchTeamID;
+    
+    class CommentaryManager* commentaryManager;
     signed int bestPossessionTeamID;
     Player *designatedPossessionPlayer;
     Player *ballRetainer;
