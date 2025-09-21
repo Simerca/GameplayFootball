@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(PACKAGE GameplayFootball)
 
@@ -42,8 +42,10 @@ include_directories(${SDL2_TTF_DIRS})
 FIND_PACKAGE(SDL2_gfx REQUIRED)
 include_directories(${SDL2_GFX_DIRS})
 
-FIND_PACKAGE(Boost REQUIRED COMPONENTS system thread filesystem)
-include_directories(${Boost_INCLUDE_DIR})
+# Prefer legacy FindBoost module over Boost's CMake config packages
+set(Boost_NO_BOOST_CMAKE ON)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS filesystem thread)
+include_directories(${Boost_INCLUDE_DIRS})
 
 FIND_PACKAGE(OpenAL REQUIRED)
 include_directories(${OPENAL_INCLUDE_DIR})
@@ -97,10 +99,17 @@ add_library(hidlib ${HID_SOURCES} ${HID_HEADERS})
 add_library(menulib ${MENU_SOURCES} ${MENU_HEADERS})
 add_library(datalib ${DATA_SOURCES} ${DATA_HEADERS})
 
+# Platform-specific libs
+if(APPLE)
+   set(PLATFORM_LIBS m)
+else()
+   set(PLATFORM_LIBS dl m)
+endif()
+
 set(LIBRARIES gamelib hidlib menulib datalib leaguelib blunted2
-   Boost::filesystem Boost::system Boost::thread SQLite::SQLite3
+   ${Boost_LIBRARIES} SQLite::SQLite3
    ${SDL2_IMAGE_LIBRARIES} ${SDL2_TTF_LIBRARIES} ${SDL2_GFX_LIBRARIES}
-   ${SDL2_LIBRARIES} ${OPENAL_LIBRARY} dl m ${OPENGL_LIBRARIES})
+   ${SDL2_LIBRARIES} ${OPENAL_LIBRARY} ${PLATFORM_LIBS} ${OPENGL_LIBRARIES})
 
 add_executable(gameplayfootball WIN32 ${CORE_SOURCES} ${CORE_HEADERS})
 target_link_libraries(gameplayfootball ${LIBRARIES})

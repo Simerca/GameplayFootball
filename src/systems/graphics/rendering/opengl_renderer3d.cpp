@@ -153,30 +153,8 @@ struct GLfunctions {
   // Possible implementation, that uses modern OpenGl can be found here:
   // https://gist.github.com/zwzmzd/0195733fa1210346b00d
   /*
-    int i, j;
-    for (i = 0; i <= lats; i++) {
-      float lat0 = pi * (-0.5 + (float) (i - 1) / lats);
-      float z0 = std::sin(lat0);
-      float zr0 = std::cos(lat0);
-
-      float lat1 = pi * (-0.5 + (float) i / lats);
-      float z1 = std::sin(lat1);
-      float zr1 = std::cos(lat1);
-
-      mapping.glBegin(GL_QUAD_STRIP);
-      for (j = 0; j <= longs; j++) {
-          float lng = 2 * pi * (float) (j - 1) / longs;
-          float x = std::cos(lng);
-          float y = std::sin(lng);
-
-          mapping.glNormal3f(x * zr0, y * zr0, z0);
-          mapping.glVertex3f(x * zr0 * r, y * zr0 * r, z0 * r);
-          mapping.glNormal3f(x * zr1, y * zr1, z1);
-          mapping.glVertex3f(x * zr1 * r, y * zr1 * r, z1 * r);
-      }
-      mapping.glEnd();
-    }
-   */
+    // Disabled on macOS core profile
+  */
   }
 
   void OpenGLRenderer3D::RenderLights(std::deque<LightQueueEntry> &lightQueue, const Matrix4 &projectionMatrix, const Matrix4 &viewMatrix) {
@@ -349,8 +327,11 @@ struct GLfunctions {
 // #endif
 
 //#ifdef WIN32
-    // SDL subsystems must be initialized before setting attributes
-    SDL_Init(SDL_INIT_VIDEO);
+    // SDL video must be initialized prior to setting attributes. If main thread
+    // already initialized it (macOS requirement), skip re-init here.
+    if ((SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) == 0) {
+      SDL_Init(SDL_INIT_VIDEO);
+    }
 
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -362,9 +343,12 @@ struct GLfunctions {
 
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // On macOS, request a 3.2 core context so GLSL #version 150 shaders compile
+    #ifdef __APPLE__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    #endif
 
     // todo: remember to enable this later on, after migrating to sdl 2 (though it is on by default with most drivers, or so it seems)
     //SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
@@ -2246,15 +2230,19 @@ struct GLfunctions {
   void OpenGLRenderer3D::operator()() {
     Log(e_Notice, "OpenGLRenderer3D", "operator()()", "Starting OpenGLRenderer3D thread");
 
-    SDL_Init(SDL_INIT_VIDEO);
-
-    int flags = IMG_INIT_JPG | IMG_INIT_PNG;
-    int inited = IMG_Init(flags);
-
-    if ((inited & flags) != flags) {
-      printf("IMG_Init: Failed to init required jpg and png support!\n");
-      printf("IMG_Init: %s\n", IMG_GetError());
+    if ((SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) == 0) {
+      SDL_Init(SDL_INIT_VIDEO);
     }
+
+    // Ensure the GL context created on the main thread is current on this thread
+    if (window && context) {
+      if (SDL_GL_MakeCurrent(window, context) != 0) {
+        printf("SDL_GL_MakeCurrent failed: %s\n", SDL_GetError());
+        return;
+      }
+    }
+
+    // Image init should be done on main thread in main.cpp
 
     SDL_Event event;
 
@@ -2263,7 +2251,8 @@ struct GLfunctions {
 
       // process messages
 
-      while (SDL_PollEvent(&event)) {
+      // Event pumping happens on main thread in Scheduler::Run
+      while (false && SDL_PollEvent(&event)) {
 
         // context losing/gaining focus
         if (event.type == SDL_WINDOWEVENT) {
@@ -2312,8 +2301,8 @@ struct GLfunctions {
 
     Exit();
 
-    IMG_Quit();
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    // IMG_Quit handled on main thread if needed
+    // Do not uninitialize video here to avoid tearing down main-thread init on macOS
 
     Log(e_Notice, "OpenGLRenderer3D", "operator()()", "Shutting down OpenGLRenderer3D thread");
 

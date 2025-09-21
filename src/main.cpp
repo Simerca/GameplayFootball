@@ -32,7 +32,9 @@
 
 #include "utils/orbitcamera.hpp"
 
+#include "SDL2/SDL.h"
 #include "SDL2/SDL_ttf.h"
+#include "SDL2/SDL_image.h"
 
 #if defined(WIN32) && defined(__MINGW32__)
 #undef main
@@ -270,6 +272,19 @@ class ThreadHudThread : public Thread {
 
 
 int main(int argc, const char** argv) {
+
+  // Ensure SDL video subsystem is initialized on the main thread (required on macOS)
+  if ((SDL_WasInit(SDL_INIT_VIDEO) & SDL_INIT_VIDEO) == 0) {
+    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
+    SDL_SetHint(SDL_HINT_VIDEO_MAC_FULLSCREEN_SPACES, "1");
+    SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
+    SDL_Init(SDL_INIT_VIDEO);
+  }
+  // Initialize image loaders on main thread as well
+  int img_flags = IMG_INIT_JPG | IMG_INIT_PNG;
+  if ((IMG_Init(img_flags) & img_flags) != img_flags) {
+    printf("IMG_Init failed: %s\n", IMG_GetError());
+  }
 
   config = new Properties();
   if (argc > 1) configFile = argv[1];

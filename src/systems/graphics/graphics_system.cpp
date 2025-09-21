@@ -30,23 +30,23 @@ namespace blunted {
     ResourceManagerPool::GetInstance().RegisterManager(e_ResourceType_Texture, textureResourceManager);
     ResourceManagerPool::GetInstance().RegisterManager(e_ResourceType_VertexBuffer, vertexBufferResourceManager);
 
-    // start thread for renderer
+    // start renderer object
     if (config.Get("graphics3d_renderer", "opengl") == "opengl") renderer3DTask = new OpenGLRenderer3D();
     width = config.GetInt("context_x", 1280);
     height = config.GetInt("context_y", 720);
     bpp = config.GetInt("context_bpp", 32);
     bool fullscreen = config.GetBool("context_fullscreen", false);
-    renderer3DTask->Run();
 
-    boost::intrusive_ptr<Renderer3DMessage_CreateContext> createContext(new Renderer3DMessage_CreateContext(width, height, bpp, fullscreen));
-    renderer3DTask->messageQueue.PushMessage(createContext);
-    createContext->Wait();
-
-    if (!createContext->success) {
+    // Create the GL context on the main thread (macOS requirement)
+    bool ctxOk = renderer3DTask->CreateContext(width, height, bpp, fullscreen);
+    if (!ctxOk) {
       Log(e_FatalError, "GraphicsSystem", "Initialize", "Could not create context");
     } else {
       Log(e_Notice, "GraphicsSystem", "Initialize", "Created context, resolution " + int_to_str(width) + " * " + int_to_str(height) + " @ " + int_to_str(bpp) + " bpp");
     }
+
+    // Now start the renderer thread which will take over the GL context
+    renderer3DTask->Run();
 
     task = new GraphicsTask(this);
     task->Run();

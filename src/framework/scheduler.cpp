@@ -8,6 +8,8 @@
 #include "managers/environmentmanager.hpp"
 #include "managers/taskmanager.hpp"
 #include "base/log.hpp"
+#include "managers/usereventmanager.hpp"
+#include "SDL2/SDL.h"
 
 namespace blunted {
 
@@ -165,6 +167,17 @@ namespace blunted {
     bool sequencesQuitMessageDone = false;
 
     while (EnvironmentManager::GetInstance().GetQuit() == false || GetSequenceCount() > 0) {
+
+      // Pump SDL events on the main thread (required on macOS)
+      SDL_Event event;
+      while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+          EnvironmentManager::GetInstance().SignalQuit();
+        } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F12) {
+          EnvironmentManager::GetInstance().SignalQuit();
+        }
+        UserEventManager::GetInstance().InputSDLEvent(event);
+      }
 
       if (EnvironmentManager::GetInstance().GetQuit()) {
 
