@@ -179,13 +179,27 @@ namespace blunted {
           bool pressed = UserEventManager::GetInstance().GetJoyButtonState(j, i);
           if (pressed && !prevButtonState[j][i]) {
             event->SetButton(j, i);
-            if (j == GetActiveJoystickID() && i == joyButtonActivate) {
-              wEvent->SetActivate();
-              needsWindowingEvent = true;
-            }
-            if (j == GetActiveJoystickID() && i == joyButtonEscape) {
-              wEvent->SetEscape();
-              needsWindowingEvent = true;
+            if (j == GetActiveJoystickID()) {
+              // Handle Xbox One S D-Pad buttons as navigation
+              if (i == 11) { // D-Pad Up
+                wEvent->SetDirection(Vector3(0, -1, 0));
+                needsWindowingEvent = true;
+              } else if (i == 12) { // D-Pad Down
+                wEvent->SetDirection(Vector3(0, 1, 0));
+                needsWindowingEvent = true;
+              } else if (i == 13) { // D-Pad Left
+                wEvent->SetDirection(Vector3(-1, 0, 0));
+                needsWindowingEvent = true;
+              } else if (i == 14) { // D-Pad Right
+                wEvent->SetDirection(Vector3(1, 0, 0));
+                needsWindowingEvent = true;
+              } else if (i == joyButtonActivate) {
+                wEvent->SetActivate();
+                needsWindowingEvent = true;
+              } else if (i == joyButtonEscape) {
+                wEvent->SetEscape();
+                needsWindowingEvent = true;
+              }
             }
           }
           prevButtonState[j][i] = pressed;

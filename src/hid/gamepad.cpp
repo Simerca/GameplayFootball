@@ -28,10 +28,22 @@ void HIDGamepad::LoadConfig() {
     previousControllerButtonState[i] = false;
   }
 
+  // Check if it's an Xbox One S controller
+  std::string controllerName = identifier;
+  bool isXboxOneS = controllerName.find("Xbox One") != std::string::npos;
+  
   for (int i = 0; i < _JOYSTICK_MAXAXES; i++) {
     float min = GetConfiguration()->GetReal(("input_gamepad_" + GetIdentifier() + "_calibration_" + int_to_str(i) + "_min").c_str(), -32768);
     float max = GetConfiguration()->GetReal(("input_gamepad_" + GetIdentifier() + "_calibration_" + int_to_str(i) + "_max").c_str(), 32767);
     float rest = GetConfiguration()->GetReal(("input_gamepad_" + GetIdentifier() + "_calibration_" + int_to_str(i) + "_rest").c_str(), 0);
+    
+    // Xbox One S triggers (axes 4 and 5) need special calibration
+    if (isXboxOneS && (i == 4 || i == 5)) {
+      min = -32768;  // Triggers range from -32768 (not pressed) to 32767 (fully pressed)
+      max = 32767;
+      rest = -32768; // Rest position is at minimum for triggers
+    }
+    
     UserEventManager::GetInstance().SetJoystickAxisCalibration(GetGamepadID(), i, min, max, rest);
   }
 
@@ -40,20 +52,45 @@ void HIDGamepad::LoadConfig() {
 
     // xbox controller defaults
     int defaultButton = 0;
-    if      (i == 0) defaultButton = -3;
-    else if (i == 1) defaultButton = -2;
-    else if (i == 2) defaultButton = -4;
-    else if (i == 3) defaultButton = -1;
-    else if (i == 4) defaultButton = 3;
-    else if (i == 5) defaultButton = 1;
-    else if (i == 6) defaultButton = 0;
-    else if (i == 7) defaultButton = 2;
-    else if (i == 8) defaultButton = 4;
-    else if (i == 9) defaultButton = -6;
-    else if (i == 10) defaultButton = 5;
-    else if (i == 11) defaultButton = -5;
-    else if (i == 12) defaultButton = 6;
-    else if (i == 13) defaultButton = 7;
+    
+    // Check if it's an Xbox One S controller (name contains "Xbox One")
+    std::string controllerName = identifier;
+    bool isXboxOneS = controllerName.find("Xbox One") != std::string::npos;
+    
+    if (isXboxOneS) {
+      // Xbox One S specific mapping
+      // D-Pad uses buttons 11-14 instead of axes
+      if      (i == 0) defaultButton = 11;  // Up (button 11)
+      else if (i == 1) defaultButton = 14;  // Right (button 14)
+      else if (i == 2) defaultButton = 12;  // Down (button 12)
+      else if (i == 3) defaultButton = 13;  // Left (button 13)
+      else if (i == 4) defaultButton = 3;   // Y
+      else if (i == 5) defaultButton = 1;   // B
+      else if (i == 6) defaultButton = 0;   // A
+      else if (i == 7) defaultButton = 2;   // X
+      else if (i == 8) defaultButton = 9;   // L1 (LB - button 9)
+      else if (i == 9) defaultButton = -10;  // L2 (LT - axis 4, positive direction)
+      else if (i == 10) defaultButton = 10; // R1 (RB - button 10)
+      else if (i == 11) defaultButton = -12;// R2 (RT - axis 5, positive direction)
+      else if (i == 12) defaultButton = 4;  // Select (View - button 4)
+      else if (i == 13) defaultButton = 6;  // Start (Menu - button 6)
+    } else {
+      // Xbox 360 / generic controller defaults
+      if      (i == 0) defaultButton = -3;
+      else if (i == 1) defaultButton = -2;
+      else if (i == 2) defaultButton = -4;
+      else if (i == 3) defaultButton = -1;
+      else if (i == 4) defaultButton = 3;
+      else if (i == 5) defaultButton = 1;
+      else if (i == 6) defaultButton = 0;
+      else if (i == 7) defaultButton = 2;
+      else if (i == 8) defaultButton = 4;
+      else if (i == 9) defaultButton = -6;
+      else if (i == 10) defaultButton = 5;
+      else if (i == 11) defaultButton = -5;
+      else if (i == 12) defaultButton = 6;
+      else if (i == 13) defaultButton = 7;
+    }
 
     controllerMapping[i] = GetConfiguration()->GetInt(("input_gamepad_" + GetIdentifier() + "_" + int_to_str(i)).c_str(), defaultButton);
   }
